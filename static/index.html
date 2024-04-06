@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Chat Interface</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #eceff1;
+            /* Subtle background color */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 50px;
+            overflow: hidden;
+        }
+
+        #chat-container {
+            width: 100%;
+            max-width: 600px;
+            opacity: 0;
+            /* Initial state for animation */
+            animation: fadeIn 1s ease forwards;
+            /* Animation */
+        }
+
+        #chat-box {
+            height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 10px;
+            background-color: white;
+        }
+
+        .chat-message {
+            padding: 10px;
+            margin: 5px;
+            border-radius: 10px;
+        }
+
+        .user-message {
+            background-color: #e0f7fa;
+            margin-left: 10px;
+        }
+
+        .assistant-message {
+            background-color: #d1c4e9;
+            margin-right: 10px;
+            text-align: right;
+        }
+
+        .input-field {
+            margin: 0;
+            display: flex;
+            align-items: center;
+        }
+
+        #send-btn {
+            margin-left: 10px;
+        }
+
+        .spinner {
+            display: none;
+        }
+
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+                /* Final state for animation */
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <h4>Chat Example with TaskingAI</h4>
+    <div id="chat-container" class="card z-depth-2">
+        <div id="chat-box" class="card-content"></div>
+        <div class="card-action">
+            <div class="input-field">
+                <input id="user-input" type="text" placeholder="Type a message...">
+                <button id="send-btn" class="btn waves-effect waves-light">Send</button>
+                <div class="preloader-wrapper small active spinner">
+                    <div class="spinner-layer spinner-blue">
+                        <div class="circle-clipper left">
+                            <div class="circle"></div>
+                        </div>
+                        <div class="gap-patch">
+                            <div class="circle"></div>
+                        </div>
+                        <div class="circle-clipper right">
+                            <div class="circle"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        var userId = 'user_' + Math.random().toString(36).substr(2, 9);
+        var sendButton = document.getElementById('send-btn');
+        var spinner = document.querySelector('.spinner');
+
+        document.getElementById('send-btn').addEventListener('click', function () {
+            var userInput = document.getElementById('user-input').value;
+            if (userInput) {
+                sendMessage(userInput);
+                document.getElementById('user-input').value = '';
+            }
+        });
+
+        async function sendMessage(message) {
+            addMessageToChat("You: " + message, "user-message");
+            toggleLoading(true);
+            try {
+                const response = await fetch(`/chat?user_id=${userId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ user_message: message })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                addMessageToChat("Assistant: " + data.assistant_response, "assistant-message");
+            } catch (error) {
+                console.error('Error:', error);
+                addMessageToChat("Error: " + error.message, "error-message");
+            } finally {
+                toggleLoading(false);
+            }
+        }
+
+        function addMessageToChat(message, className) {
+            var chatBox = document.getElementById('chat-box');
+            var newMessage = document.createElement('div');
+            newMessage.textContent = message;
+            newMessage.classList.add('chat-message', className);
+            chatBox.appendChild(newMessage);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function toggleLoading(isLoading) {
+            if (isLoading) {
+                sendButton.disabled = true;
+                spinner.style.display = 'block';
+            } else {
+                sendButton.disabled = false;
+                spinner.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+
+</html>
